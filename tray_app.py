@@ -3,6 +3,7 @@ from ctypes import wintypes
 import os
 import sys
 import subprocess
+import time
 from typing import Optional, Callable
 from autostart import is_autostart_enabled, enable_autostart, disable_autostart
 from config import CONFIG_FILE
@@ -10,6 +11,9 @@ from config import CONFIG_FILE
 user32 = ctypes.WinDLL('user32', use_last_error=True)
 kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
 shell32 = ctypes.WinDLL('shell32', use_last_error=True)
+
+user32.DefWindowProcW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+user32.DefWindowProcW.restype = wintypes.LPARAM
 
 # Win32 Constants
 WM_USER = 0x0400
@@ -38,6 +42,7 @@ MF_GRAYED = 0x0001
 MF_DISABLED = 0x0002
 
 IDI_APPLICATION = 32512
+HCURSOR = wintypes.HANDLE
 
 class GUID(ctypes.Structure):
     _fields_ = [
@@ -83,7 +88,7 @@ class WNDCLASSEXW(ctypes.Structure):
         ('cbWndExtra', ctypes.c_int),
         ('hInstance', wintypes.HINSTANCE),
         ('hIcon', wintypes.HICON),
-        ('hCursor', wintypes.HCURSOR),
+        ('hCursor', HCURSOR),
         ('hbrBackground', wintypes.HBRUSH),
         ('lpszMenuName', wintypes.LPCWSTR),
         ('lpszClassName', wintypes.LPCWSTR),
@@ -224,11 +229,18 @@ class TrayApp:
 
     def run(self):
         if not self._create_window():
-            print("Failed to create tray window.")
+            print("Failed to create tray window. Falling back to sleep loop...")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                if self.on_exit:
+                    self.on_exit()
             return
-        if not self._add_tray_icon():
-            print("Failed to add tray icon.")
-            return
+
+        tray_added = self._add_tray_icon()
+        if not tray_added:
+            print("Notice: System tray icon could not be attached immediately (running in background).")
 
         msg = wintypes.MSG()
         while user32.GetMessageW(ctypes.byref(msg), 0, 0, 0) > 0:
