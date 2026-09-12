@@ -114,47 +114,55 @@ class AntigravityMonitor:
             last_type = last_entry.get("type")
             last_source = last_entry.get("source")
             tool_calls = last_entry.get("tool_calls") or []
+            last_call_names = [
+                tc.get("function", {}).get("name") or tc.get("name", "")
+                for tc in tool_calls
+            ]
 
-            # 1. Check for explicit WAITING_APPROVAL conditions
-            # Check if any recent entry is a tool call requiring approval (ask_question, RequestFeedback: true)
-            for entry in parsed_entries:
-                if entry.get("source") == "USER_EXPLICIT":
-                    # Reached user input boundary, stop looking back
-                    break
-                calls = entry.get("tool_calls") or []
-                for tc in calls:
-                    fn = tc.get("function", {})
-                    fn_name = fn.get("name") or tc.get("name", "")
-                    fn_args = fn.get("arguments") or tc.get("arguments", "")
-                    if fn_name == "ask_question":
-                        # If ask_question was called and no subsequent USER_INPUT answered it
-                        return AgentState.WAITING_APPROVAL
-                    if "RequestFeedback" in str(fn_args) and '"RequestFeedback": true' in str(fn_args).lower():
-                        return AgentState.WAITING_APPROVAL
+            # 1. Interactive Question Modal (ask_question)
+            # When ask_question is open, the agent is halted waiting for the modal response.
+            # Thus, ask_question is strictly in the last_entry. Once answered, a GENERIC entry is appended.
+            if last_type == "PLANNER_RESPONSE" and "ask_question" in last_call_names:
+                return AgentState.WAITING_APPROVAL
 
-            # 2. Check for WORKING conditions
-            # - User just sent input, model is thinking
-            if last_type == "USER_INPUT" and last_source == "USER_EXPLICIT":
-                # If within 30 seconds of user input, model is actively processing
-                if time_since_modified < 60.0:
-                    return AgentState.WORKING
+            # 2. Plan Review Approval (RequestFeedback: true)
+            # If the turn ended with an artifact awaiting user plan approval
+            if last_type == "PLANNER_RESPONSE" and len(tool_calls) == 0:
+                has_pending_plan_review = False
+                for entry in parsed_entries[1:]:
+                    if entry.get("source") == "USER_EXPLICIT":
+                        break
+                    calls = entry.get("tool_calls") or []
+                    for tc in calls:
+                        args = str(tc.get("function", {}).get("arguments") or tc.get("arguments", ""))
+                        if "RequestFeedback" in args and '"requestfeedback": true' in args.lower():
+                            has_pending_plan_review = True
+                            break
+                    if has_pending_plan_review:
+                        break
+                if has_pending_plan_review and time_since_modified < 600.0:
+                    return AgentState.WAITING_APPROVAL
+                # Otherwise, turn ended normally and no approval is pending -> IDLE
+                return AgentState.IDLE
 
-            # - Planner response with tool calls (tool execution in progress)
-            if last_type == "PLANNER_RESPONSE" and len(tool_calls) > 0:
-                # Tool was dispatched, awaiting result
-                if time_since_modified < 90.0:
-                    return AgentState.WORKING
-
-            # - Tool result received (GENERIC or tool response), agent is now thinking the next step
-            if last_type == "GENERIC" or last_source == "SYSTEM":
-                if time_since_modified < 45.0:
-                    return AgentState.WORKING
-
-            # - Recent activity check: if file modified in last 3 seconds
-            if time_since_modified < 3.0:
+            # 3. Working States:
+            # - User just sent a prompt, agent is generating
+            if last_type == "USER_INPUT" and time_since_modified < 60.0:
                 return AgentState.WORKING
 
-            # 3. Otherwise, if turn ended normally and no pending approvals
+            # - Tool call is actively executing
+            if last_type == "PLANNER_RESPONSE" and len(tool_calls) > 0 and time_since_modified < 90.0:
+                return AgentState.WORKING
+
+            # - Tool result received, agent thinking next step
+            if (last_type == "GENERIC" or last_source == "SYSTEM") and time_since_modified < 45.0:
+                return AgentState.WORKING
+
+            # - Recent disk activity (last 2 seconds)
+            if time_since_modified < 2.0:
+                return AgentState.WORKING
+
+            # 4. Default to IDLE
             return AgentState.IDLE
 
         except Exception as e:
