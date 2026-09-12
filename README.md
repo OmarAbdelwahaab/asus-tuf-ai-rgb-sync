@@ -4,19 +4,20 @@
 
 ![Platform](https://img.shields.io/badge/Platform-Windows_11_%7C_10-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![ASUS](https://img.shields.io/badge/Hardware-ASUS_Gaming_Laptop-FF6600?style=for-the-badge&logo=asus&logoColor=white)
-![Antigravity](https://img.shields.io/badge/Agent-Antigravity-4285F4?style=for-the-badge&logo=google&logoColor=white)
-![Claude Desktop](https://img.shields.io/badge/Agent-Claude_Desktop-D97706?style=for-the-badge&logo=anthropic&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Hardware](https://img.shields.io/badge/Hardware-ASUS_RGB_Keyboard-FF6600?style=for-the-badge)
+![Antigravity](https://img.shields.io/badge/Agent-Antigravity-4285F4?style=for-the-badge)
+![Claude Desktop](https://img.shields.io/badge/Agent-Claude_Desktop-D97706?style=for-the-badge&logo=claude&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-2ea44f?style=for-the-badge)
 
 **An ultra-lightweight Windows background daemon that synchronizes your ASUS gaming laptop's built-in RGB keyboard backlight with the real-time active states of your AI coding and chat agents.**
 
-[Key Features](#-features) • [Lighting Modes](#-lighting-behavior) • [Quick Start](#-quick-start) • [How It Works](#-how-it-works) • [Configuration](#-configuration)
+[Overview](#overview) • [Lighting Modes](#lighting-behavior) • [Quick Start](#quick-start) • [System Tray](#system-tray) • [How It Works](#how-it-works) • [Configuration](#configuration)
 
 </div>
 
 ---
 
+<a id="overview"></a>
 ## 🌟 Overview
 
 When working with autonomous AI agents like **Antigravity** and **Claude Desktop**, you frequently wait for them to generate complex code, execute terminal commands, or request approval.
@@ -28,6 +29,7 @@ Instead of constantly alt-tabbing or monitoring windows, **ASUS TUF AI RGB Sync*
 
 ---
 
+<a id="lighting-behavior"></a>
 ## 🎨 Lighting Behavior
 
 | State | Backlight Mode | Color | Trigger Event |
@@ -53,6 +55,7 @@ $$\mathbf{Waiting\ for\ Approval\ (Yellow)} \succ \mathbf{Working\ (Red\ Breathi
 
 ---
 
+<a id="quick-start"></a>
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -81,6 +84,7 @@ Terminates the daemon and immediately restores your default keyboard backlight p
 
 ---
 
+<a id="system-tray"></a>
 ## 🖥️ System Tray Interface
 
 The application includes a native Win32 system tray icon requiring zero external GUI libraries:
@@ -110,6 +114,7 @@ The application includes a native Win32 system tray icon requiring zero external
 
 ---
 
+<a id="how-it-works"></a>
 ## 🛠️ How It Works
 
 ```
@@ -160,6 +165,7 @@ Unlike conventional tools that rely on bulky SDKs or heavyweight background suit
 
 ---
 
+<a id="configuration"></a>
 ## ⚙️ Configuration (`config.json`)
 
 All colors, modes, speeds, and polling intervals can be customized in `config.json`:
@@ -209,6 +215,7 @@ All colors, modes, speeds, and polling intervals can be customized in `config.js
 
 ---
 
+<a id="repository-structure"></a>
 ## 📂 Repository Structure
 
 ```
@@ -231,6 +238,7 @@ Keyboard_lights_Sync/
 
 ---
 
+<a id="license"></a>
 ## 📄 License
 
 MIT License © 2026
