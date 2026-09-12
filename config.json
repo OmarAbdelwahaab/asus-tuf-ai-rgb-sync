@@ -1,0 +1,37 @@
+{
+    "colors": {
+        "working": {
+            "mode": 1,
+            "rgb": [
+                255,
+                0,
+                0
+            ],
+            "speed": 1
+        },
+        "waiting_approval": {
+            "mode": 0,
+            "rgb": [
+                255,
+                255,
+                0
+            ],
+            "speed": 1
+        },
+        "default_idle": {
+            "mode": 0,
+            "rgb": [
+                0,
+                220,
+                255
+            ],
+            "speed": 1
+        }
+    },
+    "timings": {
+        "active_poll_interval_sec": 0.35,
+        "dormant_poll_interval_sec": 2.5
+    },
+    "priority": "waiting_first",
+    "autostart": false
+}
