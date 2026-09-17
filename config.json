@@ -30,7 +30,8 @@
     },
     "timings": {
         "active_poll_interval_sec": 0.35,
-        "dormant_poll_interval_sec": 2.5
+        "dormant_poll_interval_sec": 2.5,
+        "claude_hold_time_sec": 3.5
     },
     "priority": "waiting_first",
     "autostart": false
