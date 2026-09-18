@@ -243,6 +243,13 @@ class TrayApp:
             print("Notice: System tray icon could not be attached immediately (running in background).")
 
         msg = wintypes.MSG()
-        while user32.GetMessageW(ctypes.byref(msg), 0, 0, 0) > 0:
+        while True:
+            ret = user32.GetMessageW(ctypes.byref(msg), 0, 0, 0)
+            if ret == 0:  # WM_QUIT
+                break
+            elif ret == -1:
+                # Handle non-interactive or disconnected desktop
+                time.sleep(1)
+                continue
             user32.TranslateMessage(ctypes.byref(msg))
             user32.DispatchMessageW(ctypes.byref(msg))

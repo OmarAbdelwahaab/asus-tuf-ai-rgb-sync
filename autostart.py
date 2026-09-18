@@ -10,11 +10,29 @@ def get_script_dir() -> str:
 def is_autostart_enabled() -> bool:
     return os.path.exists(SHORTCUT_VBS)
 
+def cleanup_stray_startup_files():
+    """Removes any batch or misplaced scripts from Startup folder that cause cmd popups."""
+    strays = [
+        "setup_autostart.bat",
+        "start_ai_rgb.vbs",
+        "start_hidden.vbs",
+        "start.bat",
+        "stop.bat"
+    ]
+    for s in strays:
+        path = os.path.join(STARTUP_DIR, s)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
 def enable_autostart() -> bool:
     """
     Creates a silent launcher VBS script in Windows Startup folder.
     Runs pythonw.exe main.py without displaying any command prompt window.
     """
+    cleanup_stray_startup_files()
     script_dir = get_script_dir()
     main_py = os.path.join(script_dir, "main.py")
     
@@ -37,6 +55,7 @@ WshShell.Run """{pythonw}"" ""{main_py}""", 0, False
         return False
 
 def disable_autostart() -> bool:
+    cleanup_stray_startup_files()
     try:
         if os.path.exists(SHORTCUT_VBS):
             os.remove(SHORTCUT_VBS)

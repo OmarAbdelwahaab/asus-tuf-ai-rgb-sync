@@ -1,6 +1,14 @@
+import os
 import sys
 import time
 import signal
+
+# Redirect stdout/stderr if None (standard when running under pythonw.exe on Windows)
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w', encoding='utf-8')
+
 from coordinator import StateCoordinator
 from antigravity_monitor import AgentState
 
@@ -35,15 +43,12 @@ def main():
             tray_app_instance = TrayApp(coordinator, on_exit=cleanup)
             tray_app_instance.run()
         except Exception as e:
-            print(f"Tray error ({e}), falling back to headless console mode...")
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                cleanup()
-    else:
+            pass
+
+    # If tray exited or --no-tray was specified, maintain daemon loop until interrupted
+    if coordinator._running:
         try:
-            while True:
+            while coordinator._running:
                 time.sleep(1)
         except KeyboardInterrupt:
             cleanup()
