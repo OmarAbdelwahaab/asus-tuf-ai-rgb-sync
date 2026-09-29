@@ -230,17 +230,19 @@ class ClaudeMonitor:
         storage_recent = (now - storage_mtime < 3.0) if storage_mtime > 0 else False
 
         # Active generation indicators:
-        # 1. Substantial I/O transfer (SSE token stream or disk writes): io_delta > 1000 bytes
-        # 2. Chromium renderer processing token DOM chunks with network/disk I/O: renderer_cpu > 0.4% and io_delta > 200 bytes
-        # 3. Sustained renderer parsing & rendering: renderer_cpu > 1.2%
-        # 4. Total app activity with active I/O: total_cpu > 2.0% and io_delta > 300 bytes
-        # 5. Recent storage flush accompanied by renderer or I/O activity: storage_recent and (renderer_cpu > 0.2% or io_delta > 0)
+        # Claude Desktop is an Electron app. Background housekeeping (telemetry flush,
+        # process memory scans, updater checks, and log writes) runs entirely on the
+        # 'main' and 'utility' processes.
+        # The 'renderer' processes (--type=renderer) ONLY run when rendering the chat DOM,
+        # parsing markdown, and laying out streaming token chunks.
+        # At idle, renderer CPU is strictly 0.00%.
+        #
+        # Active streaming criteria:
+        # 1. Active renderer parsing/layout: renderer_cpu >= 0.5%
+        # 2. Moderate renderer activity combined with IndexedDB cache write: renderer_cpu >= 0.3% and storage_recent
         is_active_now = (
-            io_delta > 1000 or
-            (renderer_cpu > 0.4 and io_delta > 200) or
-            renderer_cpu > 1.2 or
-            (total_cpu > 2.0 and io_delta > 300) or
-            (storage_recent and (renderer_cpu > 0.2 or io_delta > 0))
+            renderer_cpu >= 0.5 or
+            (renderer_cpu >= 0.3 and storage_recent)
         )
 
         cfg = load_config()
@@ -248,18 +250,14 @@ class ClaudeMonitor:
         hold_time_sec = timings.get("claude_hold_time_sec", self.DEFAULT_HOLD_TIME_SEC)
 
         if is_active_now:
+            self._consecutive_active_ticks += 1
             self._last_active_time = now
-            # If there is definite I/O or storage persistence, activate immediately
-            if io_delta > 500 or storage_recent:
-                self._consecutive_active_ticks = 2
-            else:
-                self._consecutive_active_ticks += 1
         else:
             self._consecutive_active_ticks = max(0, self._consecutive_active_ticks - 1)
 
-        # To enter WORKING from IDLE: require 2 ticks (or 1 instant tick if definite I/O was detected above)
+        # To enter WORKING from IDLE: require 2 consecutive active ticks (or single tick if heavy generation >= 2.0%)
         if self._current_state != AgentState.WORKING:
-            if self._consecutive_active_ticks >= 2:
+            if self._consecutive_active_ticks >= 2 or renderer_cpu >= 2.0:
                 self._current_state = AgentState.WORKING
                 return AgentState.WORKING
             return AgentState.IDLE
