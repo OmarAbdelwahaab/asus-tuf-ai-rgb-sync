@@ -12,14 +12,19 @@ if sys.stderr is None:
 from coordinator import StateCoordinator
 from antigravity_monitor import AgentState
 
+from config import load_config
+
 def main():
     use_tray = "--no-tray" not in sys.argv
 
     def on_state_change(ag_state: AgentState, cl_state: AgentState, res_state: AgentState):
-        tip = f"ASUS AI Sync: {res_state.value}\nAntigravity: {ag_state.value}\nClaude: {cl_state.value}"
+        cfg = load_config()
+        claude_enabled = cfg.get("enable_claude", False)
+        cl_display = cl_state.value if claude_enabled else "PAUSED"
+        tip = f"ASUS AI Sync: {res_state.value}\nAntigravity: {ag_state.value}\nClaude: {cl_display}"
         if use_tray and tray_app_instance:
             tray_app_instance.update_tooltip(tip)
-        print(f"[{time.strftime('%H:%M:%S')}] Antigravity: {ag_state.value} | Claude: {cl_state.value} => Backlight: {res_state.value}", flush=True)
+        print(f"[{time.strftime('%H:%M:%S')}] Antigravity: {ag_state.value} | Claude: {cl_display} => Backlight: {res_state.value}", flush=True)
 
     coordinator = StateCoordinator(on_state_change=on_state_change)
     tray_app_instance = None
@@ -33,9 +38,13 @@ def main():
     signal.signal(signal.SIGTERM, cleanup)
 
     coordinator.start()
+    cfg = load_config()
+    claude_enabled = cfg.get("enable_claude", False)
     print("ASUS Gaming Laptop AI RGB Sync Daemon started.", flush=True)
     print("Priority: Waiting for Approval > Working > Idle", flush=True)
     print("Working: Breathing Pure 255 Red | Waiting: Solid Pure 255 Yellow | Idle: Default Profile", flush=True)
+    if not claude_enabled:
+        print("Note: Claude Desktop sync is PAUSED (unplugged). Focusing solely on Antigravity.", flush=True)
 
     if use_tray:
         try:

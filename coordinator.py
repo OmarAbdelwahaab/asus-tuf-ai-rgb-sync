@@ -54,8 +54,15 @@ class StateCoordinator:
 
     def update_cycle(self) -> float:
         """Executes one polling cycle and returns recommended sleep duration."""
+        cfg = load_config()
+        claude_enabled = cfg.get("enable_claude", False)
+
         ag_state = self.antigravity_monitor.get_state()
-        cl_state = self.claude_monitor.get_state()
+        if claude_enabled:
+            cl_state = self.claude_monitor.get_state()
+        else:
+            cl_state = AgentState.OFF
+
         resolved = self.resolve_state(ag_state, cl_state)
 
         changed = (
@@ -77,18 +84,19 @@ class StateCoordinator:
                     pass
 
         # Adjust sleep interval dynamically
-        cfg = load_config()
         timings = cfg.get("timings", {})
         if resolved == AgentState.OFF:
-            # Both programs closed: sleep longer to conserve resources
+            # Both programs closed or idle: sleep longer to conserve resources
             return timings.get("dormant_poll_interval_sec", 2.5)
         else:
             # Active tracking: rapid poll for immediate response
             return timings.get("active_poll_interval_sec", 0.35)
 
     def _run_loop(self):
-        # Prime monitors
-        self.claude_monitor._sample_cpu()
+        # Prime monitors if enabled
+        cfg = load_config()
+        if cfg.get("enable_claude", False):
+            self.claude_monitor._sample_cpu()
         while self._running:
             try:
                 sleep_sec = self.update_cycle()

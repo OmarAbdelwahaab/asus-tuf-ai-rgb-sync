@@ -194,9 +194,13 @@ All colors, modes, speeds, and polling intervals can be customized in `config.js
         "dormant_poll_interval_sec": 2.5
     },
     "priority": "waiting_first",
-    "autostart": false
+    "autostart": false,
+    "enable_claude": false
 }
 ```
+
+### Agent Toggles
+- **`enable_claude`**: Set to `false` to temporarily pause/unplug Claude Desktop sync (focusing exclusively on Antigravity), or `true` to enable Claude monitoring. Can also be toggled directly from the system tray menu (**Sync with Claude Desktop**).
 
 ### Mode Reference
 | Code | Effect |

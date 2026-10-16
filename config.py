@@ -25,7 +25,8 @@ DEFAULT_CONFIG = {
         "dormant_poll_interval_sec": 2.5
     },
     "priority": "waiting_first", # "waiting_first": WAITING > WORKING > IDLE
-    "autostart": False
+    "autostart": False,
+    "enable_claude": False
 }
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")

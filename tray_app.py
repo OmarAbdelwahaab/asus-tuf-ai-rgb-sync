@@ -6,7 +6,7 @@ import subprocess
 import time
 from typing import Optional, Callable
 from autostart import is_autostart_enabled, enable_autostart, disable_autostart
-from config import CONFIG_FILE
+from config import CONFIG_FILE, load_config, save_config
 
 user32 = ctypes.WinDLL('user32', use_last_error=True)
 kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
@@ -151,9 +151,12 @@ class TrayApp:
     def _show_menu(self):
         h_menu = user32.CreatePopupMenu()
 
+        cfg = load_config()
+        claude_enabled = cfg.get("enable_claude", False)
+
         # Status item (disabled header)
         ag_st = self.coordinator.antigravity_state.value
-        cl_st = self.coordinator.claude_state.value
+        cl_st = self.coordinator.claude_state.value if claude_enabled else "PAUSED"
         res_st = self.coordinator.resolved_state.value
         status_text = f"Status: {res_st} (AG: {ag_st}, Claude: {cl_st})"
 
@@ -166,13 +169,17 @@ class TrayApp:
         user32.AppendMenuW(h_menu, MF_STRING, 203, "Test: Default Profile (Idle)")
         user32.AppendMenuW(h_menu, MF_SEPARATOR, 204, "")
 
+        # Claude Sync Toggle option
+        claude_flags = MF_STRING | (MF_CHECKED if claude_enabled else MF_UNCHECKED)
+        user32.AppendMenuW(h_menu, claude_flags, 303, "Sync with Claude Desktop")
+
         # Autostart option
         autostart_flags = MF_STRING | (MF_CHECKED if is_autostart_enabled() else MF_UNCHECKED)
         user32.AppendMenuW(h_menu, autostart_flags, 301, "Start with Windows")
 
         # Config option
         user32.AppendMenuW(h_menu, MF_STRING, 302, "Open Settings (config.json)")
-        user32.AppendMenuW(h_menu, MF_SEPARATOR, 303, "")
+        user32.AppendMenuW(h_menu, MF_SEPARATOR, 304, "")
 
         # Exit
         user32.AppendMenuW(h_menu, MF_STRING, 401, "Exit")
@@ -214,6 +221,10 @@ class TrayApp:
                     enable_autostart()
             elif cmd == 302:
                 subprocess.Popen(f'notepad.exe "{CONFIG_FILE}"', shell=True)
+            elif cmd == 303:
+                cfg = load_config()
+                cfg["enable_claude"] = not cfg.get("enable_claude", False)
+                save_config(cfg)
             elif cmd == 401:
                 user32.DestroyWindow(self.hwnd)
             return 0

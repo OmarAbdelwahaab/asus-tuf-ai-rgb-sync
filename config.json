@@ -34,5 +34,6 @@
         "claude_hold_time_sec": 4.5
     },
     "priority": "waiting_first",
-    "autostart": false
+    "autostart": false,
+    "enable_claude": false
 }

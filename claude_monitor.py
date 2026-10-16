@@ -84,6 +84,11 @@ class ClaudeMonitor:
         Lightweight check if Claude Desktop processes are running.
         Maintains persistent psutil.Process handles to avoid resetting CPU & I/O baselines.
         """
+        cfg = load_config()
+        if not cfg.get("enable_claude", False):
+            self._is_running = False
+            return False
+
         now = time.time()
         if now - self._last_proc_refresh < 4.0 and self._proc_map:
             alive = {}
@@ -208,11 +213,18 @@ class ClaudeMonitor:
     def get_state(self) -> AgentState:
         """
         Determines current state of Claude Desktop:
-        - OFF: Claude is not running
+        - OFF: Claude is not running or disabled
         - WAITING_APPROVAL: Tool approval prompt waiting
         - WORKING: Claude is actively streaming tokens / generating
         - IDLE: Claude is idle waiting for user prompt
         """
+        cfg = load_config()
+        if not cfg.get("enable_claude", False):
+            self._consecutive_active_ticks = 0
+            self._last_active_time = 0
+            self._current_state = AgentState.OFF
+            return AgentState.OFF
+
         if not self.is_running():
             self._consecutive_active_ticks = 0
             self._last_active_time = 0
